@@ -25,7 +25,7 @@ const freq = (midi) => Tone.Frequency(snapToScale(midi), 'midi').toFrequency();
 // audioSession 'playback' makes Safari (16.4+) play even with the ring/silent switch on mute.
 const running = () => Tone.getContext().state === 'running';
 
-function unlock() {
+export function unlock() {
   if (navigator.audioSession) navigator.audioSession.type = 'playback';
   if (!running()) Tone.start();
 }

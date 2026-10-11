@@ -1,5 +1,5 @@
 import { createKeyboard } from './keyboard.js';
-import { noteOn, noteOff } from './audio.js';
+import { noteOn, noteOff, unlock } from './audio.js';
 import { createPhraseTracker, interpret } from './phrase.js';
 import { createBoard, applyPhrase } from './board.js';
 import { createRenderer } from './render.js';
@@ -10,6 +10,15 @@ import { createScore } from './score.js';
 document.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 document.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
 document.addEventListener('gesturestart', (e) => e.preventDefault());
+
+// Start screen: the tap that dismisses it is the gesture iOS needs to open audio,
+// so the very first key already sounds.
+const start = document.getElementById('start');
+start.addEventListener('pointerup', () => {
+  unlock();
+  start.classList.add('gone');
+  start.addEventListener('transitionend', () => start.remove(), { once: true });
+}, { once: true });
 
 const pieces = createBoard();
 const renderer = createRenderer(document.getElementById('board'), pieces);
