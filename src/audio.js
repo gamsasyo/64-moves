@@ -25,7 +25,7 @@ export const INSTRUMENTS = {
   xylophone: { label: 'Xylophone', octave: 12, urls: urls(['G4', 'C5', 'G5', 'C6', 'G6']) },
 };
 
-const reverb = new Tone.Reverb({ decay: 3.5, preDelay: 0.02, wet: 0.3 }).toDestination();
+const reverb = new Tone.Reverb({ decay: 5, preDelay: 0.03, wet: 0.5 }).toDestination();
 
 // Built on first use, then kept.
 const samplers = {};
