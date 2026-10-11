@@ -1,0 +1,185 @@
+:root {
+  --bg: #0b0b0c;
+  --sq-light: #3a3836;
+  --sq-dark: #151414;
+  --ivory: #f1ece2;
+  --ink: #0e0e0f;
+  --line: #3a3835;
+  --ash: #8a857c;
+  --spot: 255, 236, 200;   /* rgb of the spotlight */
+
+  --info-h: 40px;
+  --score-h: 92px;
+  --keys-ratio: 0.625;   /* keyboard height = column width × this (8 keys : 5) */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+#app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  gap: 16px;
+  /* One column width for all three layers. Stage (square) + keyboard (fixed ratio) + score
+     must fit the height, so the column is bounded by height too. */
+  --col: min(100%, calc((100dvh - var(--info-h) - var(--score-h) - 112px) / (1 + var(--keys-ratio))));
+}
+
+/* ---------- title ---------- */
+#info {
+  width: var(--col);
+  height: var(--info-h);
+  flex-shrink: 0;
+  font-family: ui-monospace, Menlo, monospace;
+}
+#info h1 { margin: 0 0 6px; font-size: 13px; font-weight: 500; color: var(--ivory); }
+#info h1 span { color: var(--ash); font-weight: 400; }
+#info p  { margin: 0; font-size: 11px; color: var(--ash); }
+
+/* ---------- ① stage ---------- */
+#board {
+  position: relative;
+  width: var(--col);
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.cell { background: var(--sq-light); }
+.cell.dark { background: var(--sq-dark); }
+
+.piece {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12.5%;
+  height: 12.5%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: min(8vw, 4.5dvh);
+  line-height: 1;
+  transition: transform 450ms cubic-bezier(.4, 0, .2, 1);
+  will-change: transform;
+}
+
+.piece.white { color: var(--ivory); }
+.piece.black {
+  color: var(--ink);
+  -webkit-text-stroke: 1px var(--ash);
+}
+
+/* Spotlight pooled under each dancer. Brightens while the phrase that will move it is played. */
+.piece::before {
+  content: '';
+  position: absolute;
+  inset: -70%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--spot), .22) 0%, rgba(var(--spot), .06) 35%, transparent 65%);
+  opacity: .45;
+  transition: opacity 200ms;
+  pointer-events: none;
+}
+
+.piece.glow::before { opacity: 1; }
+
+/* Afterimage left at the old square when a dancer moves. */
+.piece.ghost {
+  transition: none;
+  animation: fade 1400ms ease-out forwards;
+}
+.piece.ghost::before { display: none; }
+
+@keyframes fade {
+  from { opacity: .35; }
+  to   { opacity: 0; }
+}
+
+.piece.stuck { animation: shake 250ms; }
+
+@keyframes shake {
+  25% { margin-left: -4px; }
+  75% { margin-left: 4px; }
+}
+
+/* ---------- ② score ---------- */
+#score {
+  width: var(--col);
+  height: var(--score-h);
+  flex-shrink: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+#score svg { display: block; width: 100%; height: 100%; }
+#score .staff line { stroke: var(--line); stroke-width: 1; }
+#score .roll { transition: transform 250ms ease-out; }
+#score .note { animation: appear 120ms ease-out; transition: opacity 150ms; }
+#score .note.white { color: var(--ivory); }
+#score .note.black { color: var(--ash); }   /* black-key notes take the black pieces' outline color */
+#score .note.held { opacity: .5; }
+#score .head { fill: currentColor; stroke: currentColor; stroke-width: 1.2; }
+#score .hollow .head { fill: var(--bg); }
+#score .stem, #score .flag { stroke: currentColor; stroke-width: 1.2; fill: none; }
+#score .ledger { stroke: #6d6962; stroke-width: 1; }
+#score .move { font: 12px/1 ui-monospace, Menlo, monospace; animation: appear 200ms ease-out; }
+#score .move.white { fill: var(--ivory); }
+#score .move.black { fill: var(--ash); }
+#score .bar { stroke: #4d4a46; stroke-width: 0.75; animation: appear 200ms ease-out; }
+
+@keyframes appear {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ---------- ③ keyboard ---------- */
+#keyboard {
+  position: relative;
+  width: var(--col);
+  aspect-ratio: 8 / 5;           /* must match --keys-ratio */
+  flex-shrink: 0;
+  display: flex;
+}
+
+.key { touch-action: none; }
+
+.key.white {
+  flex: 1;
+  background: var(--ivory);
+  border: 1px solid var(--bg);
+  border-radius: 0 0 6px 6px;
+}
+
+.key.black {
+  position: absolute;
+  top: 0;
+  width: 8%;
+  height: 60%;
+  background: var(--ink);
+  border: 1px solid #2a2928;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  z-index: 1;
+  transform: translateX(-50%);
+}
+
+.key.white.down { background: #cfc8bb; }
+.key.black.down { background: #3a3835; }
