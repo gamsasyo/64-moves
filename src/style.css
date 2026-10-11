@@ -55,6 +55,19 @@ html, body {
   font-family: ui-monospace, Menlo, monospace;
 }
 #info h1 { margin: 0 0 4px; font-size: 13px; font-weight: 500; color: var(--ivory); }
+/* Temporary: instrument audition, top-right corner of the stage. */
+#instrument {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  padding: 4px 8px;
+  font: 11px/1 ui-monospace, Menlo, monospace;
+  color: var(--ivory);
+  background: rgba(11, 11, 12, .7);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
 #info h1 span { color: var(--ash); font-weight: 400; }
 #info p  { margin: 0; font-size: 11px; color: var(--ash); }
 

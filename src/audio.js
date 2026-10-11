@@ -11,22 +11,47 @@ export function snapToScale(midi) {
   return midi;
 }
 
-// Salamander Grand Piano samples (Alexander Holm, CC-BY 3.0), self-hosted in public/samples.
+// Sampled instruments, self-hosted in public/samples/<name>/ (all CC-BY 3.0:
+// piano = Salamander Grand Piano by Alexander Holm, others = nbrosowsky/tonejs-instruments).
 // Sampler pitch-shifts the nearest sample to fill the notes in between.
+// `octave` shifts the whole keyboard (xylophone only sounds right an octave up).
+const note = (n) => n.replace('s', '#');
+const urls = (names) => Object.fromEntries(names.map((n) => [note(n), `${n}.mp3`]));
+
+export const INSTRUMENTS = {
+  piano:     { label: 'Piano',     octave: 0,  urls: urls(['A3', 'C4', 'Ds4', 'Fs4', 'A4', 'C5', 'Ds5']) },
+  harp:      { label: 'Harp',      octave: 0,  urls: urls(['G3', 'B3', 'D4', 'F4', 'A4', 'C5', 'E5', 'G5']) },
+  guitar:    { label: 'Guitar',    octave: 0,  urls: urls(['A3', 'Cs4', 'E4', 'Fs4', 'Gs4', 'A4', 'B4', 'Cs5', 'E5']) },
+  xylophone: { label: 'Xylophone', octave: 12, urls: urls(['G4', 'C5', 'G5', 'C6', 'G6']) },
+};
+
 const reverb = new Tone.Reverb({ decay: 3.5, preDelay: 0.02, wet: 0.3 }).toDestination();
 
-let loaded = false;
-const piano = new Tone.Sampler({
-  urls: {
-    A3: 'A3.mp3', C4: 'C4.mp3', 'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3',
-    A4: 'A4.mp3', C5: 'C5.mp3', 'D#5': 'Ds5.mp3',
-  },
-  baseUrl: `${import.meta.env.BASE_URL}samples/`,
-  release: 1,
-  onload: () => { loaded = true; },
-}).connect(reverb);
+// Built on first use, then kept.
+const samplers = {};
+function sampler(name) {
+  if (!samplers[name]) {
+    const s = new Tone.Sampler({
+      urls: INSTRUMENTS[name].urls,
+      baseUrl: `${import.meta.env.BASE_URL}samples/${name}/`,
+      release: 1,
+      onload: () => { s.ready = true; },
+    }).connect(reverb);
+    samplers[name] = s;
+  }
+  return samplers[name];
+}
 
-const freq = (midi) => Tone.Frequency(snapToScale(midi), 'midi').toFrequency();
+let current = 'piano';
+sampler(current);
+
+export function setInstrument(name) {
+  current = name;
+  sampler(name);
+}
+
+const freq = (midi) =>
+  Tone.Frequency(snapToScale(midi) + INSTRUMENTS[current].octave, 'midi').toFrequency();
 
 // iOS only lets audio start inside a gesture that counts as "user activation" — touchend /
 // pointerup / click, not touchstart / pointerdown. So unlock on release, and keep trying on
@@ -47,9 +72,15 @@ for (const ev of ['touchend', 'pointerup', 'click', 'keydown']) {
 // never queue notes behind a pending start() — on iOS that promise can hang forever.
 export function noteOn(midi) {
   if (!running()) { unlock(); return; }
-  if (loaded) piano.triggerAttack(freq(midi));
+  const s = sampler(current);
+  if (s.ready) s.triggerAttack(freq(midi));
 }
 
+// Release on every loaded instrument, in case the instrument changed while the key was held.
 export function noteOff(midi) {
-  if (running() && loaded) piano.triggerRelease(freq(midi));
+  if (!running()) return;
+  for (const name in samplers) {
+    const s = samplers[name];
+    if (s.ready) s.triggerRelease(Tone.Frequency(snapToScale(midi) + INSTRUMENTS[name].octave, 'midi').toFrequency());
+  }
 }

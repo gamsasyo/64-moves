@@ -1,5 +1,5 @@
 import { createKeyboard } from './keyboard.js';
-import { noteOn, noteOff, unlock } from './audio.js';
+import { noteOn, noteOff, unlock, setInstrument, INSTRUMENTS } from './audio.js';
 import { createPhraseTracker, interpret } from './phrase.js';
 import { createBoard, applyPhrase } from './board.js';
 import { createRenderer } from './render.js';
@@ -19,6 +19,16 @@ start.addEventListener('pointerup', () => {
   start.classList.add('gone');
   start.addEventListener('transitionend', () => start.remove(), { once: true });
 }, { once: true });
+
+// Instrument audition: tap to cycle through the sampled instruments.
+const instrumentBtn = document.getElementById('instrument');
+const names = Object.keys(INSTRUMENTS);
+let instrumentIndex = 0;
+instrumentBtn.addEventListener('pointerup', () => {
+  instrumentIndex = (instrumentIndex + 1) % names.length;
+  setInstrument(names[instrumentIndex]);
+  instrumentBtn.textContent = `♪ ${INSTRUMENTS[names[instrumentIndex]].label}`;
+});
 
 const pieces = createBoard();
 const renderer = createRenderer(document.getElementById('board'), pieces);
