@@ -11,11 +11,20 @@ export function snapToScale(midi) {
   return midi;
 }
 
-const synth = new Tone.PolySynth(Tone.Synth, {
-  oscillator: { type: 'triangle' },
-  envelope: { attack: 0.005, decay: 0.3, sustain: 0.35, release: 0.8 },
-}).toDestination();
-synth.volume.value = -8;
+// Salamander Grand Piano samples (Alexander Holm, CC-BY 3.0), self-hosted in public/samples.
+// Sampler pitch-shifts the nearest sample to fill the notes in between.
+const reverb = new Tone.Reverb({ decay: 3.5, preDelay: 0.02, wet: 0.3 }).toDestination();
+
+let loaded = false;
+const piano = new Tone.Sampler({
+  urls: {
+    A3: 'A3.mp3', C4: 'C4.mp3', 'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3',
+    A4: 'A4.mp3', C5: 'C5.mp3', 'D#5': 'Ds5.mp3',
+  },
+  baseUrl: `${import.meta.env.BASE_URL}samples/`,
+  release: 1,
+  onload: () => { loaded = true; },
+}).connect(reverb);
 
 const freq = (midi) => Tone.Frequency(snapToScale(midi), 'midi').toFrequency();
 
@@ -38,9 +47,9 @@ for (const ev of ['touchend', 'pointerup', 'click', 'keydown']) {
 // never queue notes behind a pending start() — on iOS that promise can hang forever.
 export function noteOn(midi) {
   if (!running()) { unlock(); return; }
-  synth.triggerAttack(freq(midi));
+  if (loaded) piano.triggerAttack(freq(midi));
 }
 
 export function noteOff(midi) {
-  if (running()) synth.triggerRelease(freq(midi));
+  if (running() && loaded) piano.triggerRelease(freq(midi));
 }
