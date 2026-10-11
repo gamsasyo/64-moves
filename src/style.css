@@ -8,9 +8,12 @@
   --ash: #8a857c;
   --spot: 255, 236, 200;   /* rgb of the spotlight */
 
-  --info-h: 40px;
+  --info-h: 36px;
   --score-h: 92px;
-  --keys-ratio: 0.625;   /* keyboard height = column width × this (8 keys : 5) */
+  --pad: 8px;
+  --gap: 8px;
+  --keys-min: 0.4;       /* keyboard height = column width × 0.4 … 0.625 */
+  --keys-max: 0.625;
 }
 
 * { box-sizing: border-box; }
@@ -32,11 +35,16 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-  gap: 16px;
-  /* One column width for all three layers. Stage (square) + keyboard (fixed ratio) + score
-     must fit the height, so the column is bounded by height too. */
-  --col: min(100%, calc((100dvh - var(--info-h) - var(--score-h) - 112px) / (1 + var(--keys-ratio))));
+  padding: max(var(--pad), env(safe-area-inset-top)) var(--pad) max(var(--pad), env(safe-area-inset-bottom));
+  gap: var(--gap);
+  /* One column width for all layers: full screen width, unless the height can't fit
+     stage (square) + score + the shortest keyboard. Only absolute units here, no %,
+     because --col is also used for heights. */
+  --col: min(
+    100vw - 2 * var(--pad),
+    (100dvh - var(--info-h) - var(--score-h) - 3 * var(--gap) - 2 * var(--pad)
+      - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / (1 + var(--keys-min))
+  );
 }
 
 /* ---------- title ---------- */
@@ -46,7 +54,7 @@ html, body {
   flex-shrink: 0;
   font-family: ui-monospace, Menlo, monospace;
 }
-#info h1 { margin: 0 0 6px; font-size: 13px; font-weight: 500; color: var(--ivory); }
+#info h1 { margin: 0 0 4px; font-size: 13px; font-weight: 500; color: var(--ivory); }
 #info h1 span { color: var(--ash); font-weight: 400; }
 #info p  { margin: 0; font-size: 11px; color: var(--ash); }
 
@@ -154,8 +162,9 @@ html, body {
 #keyboard {
   position: relative;
   width: var(--col);
-  aspect-ratio: 8 / 5;           /* must match --keys-ratio */
-  flex-shrink: 0;
+  flex: 1 1 auto;                /* fill leftover height, within the ratio range */
+  min-height: calc(var(--col) * var(--keys-min));
+  max-height: calc(var(--col) * var(--keys-max));
   display: flex;
 }
 
