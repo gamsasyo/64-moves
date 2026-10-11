@@ -8,7 +8,7 @@
   --ash: #8a857c;
   --spot: 255, 236, 200;   /* rgb of the spotlight */
 
-  --info-h: 52px;   /* title + up to two lines of description */
+  --info-h: 40px;
   --score-h: 92px;
   --pad: 8px;
   --gap: 8px;
