@@ -95,17 +95,12 @@ html, body {
   justify-content: center;
   font-size: min(8vw, 4.5dvh);
   line-height: 1;
-  transition: transform 450ms cubic-bezier(.4, 0, .2, 1);
   will-change: transform;
+  z-index: 2;
 }
 
 .piece.white { color: var(--ivory); }
-.piece.black {
-  color: var(--ink);
-  -webkit-text-stroke: 1px var(--ash);
-}
-
-/* Spotlight pooled under each dancer. Brightens while the phrase that will move it is played. */
+/* Spotlight pooled under the dancer. */
 .piece::before {
   content: '';
   position: absolute;
@@ -113,12 +108,12 @@ html, body {
   z-index: -1;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(var(--spot), .22) 0%, rgba(var(--spot), .06) 35%, transparent 65%);
-  opacity: .45;
-  transition: opacity 200ms;
+  opacity: .7;
   pointer-events: none;
 }
 
-.piece.glow::before { opacity: 1; }
+/* On the bike the dancer sits a little higher, above the saddle. */
+.piece.riding { top: -6.5%; }
 
 /* Afterimage left at the old square when a dancer moves. */
 .piece.ghost {
@@ -132,11 +127,72 @@ html, body {
   to   { opacity: 0; }
 }
 
-.piece.stuck { animation: shake 250ms; }
+/* ---------- stage props: bicycle, rain, fireworks ---------- */
+.bike {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12.5%;
+  height: 12.5%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6%;
+  color: var(--ivory);
+  opacity: 0;
+  transition: opacity 1200ms;
+  will-change: transform;
+  z-index: 1;
+}
+.bike.shown { opacity: .85; }
+.bike svg { width: 92%; }
 
-@keyframes shake {
-  25% { margin-left: -4px; }
-  75% { margin-left: 4px; }
+.rain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition-property: opacity;
+  pointer-events: none;
+  z-index: 3;
+}
+.rain i {
+  position: absolute;
+  top: -15%;
+  width: 1px;
+  height: 9%;
+  background: linear-gradient(transparent, rgba(var(--spot), .55));
+  transform: rotate(12deg);
+  animation: fall linear infinite;
+}
+@keyframes fall {
+  to { top: 110%; margin-left: -6%; }
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.burst { position: absolute; width: 0; height: 0; }
+.burst i {
+  position: absolute;
+  left: -1px;
+  top: 0;
+  width: 2px;
+  height: 18px;
+  border-radius: 1px;
+  background: rgb(var(--spot));
+  box-shadow: 0 0 6px rgba(var(--spot), .8);
+  transform-origin: 50% 0;
+  transform: rotate(var(--a)) translateY(0) scaleY(.3);
+  opacity: 0;
+  animation: spark 1600ms cubic-bezier(.1, .7, .3, 1) forwards;
+}
+@keyframes spark {
+  10% { opacity: 1; }
+  to  { transform: rotate(var(--a)) translateY(var(--r)) scaleY(1); opacity: 0; }
 }
 
 /* ---------- ② score ---------- */
@@ -151,19 +207,20 @@ html, body {
 
 #score svg { display: block; width: 100%; height: 100%; }
 #score .staff line { stroke: var(--line); stroke-width: 1; }
-#score .roll { transition: transform 250ms ease-out; }
-#score .note { animation: appear 120ms ease-out; transition: opacity 150ms; }
-#score .note.white { color: var(--ivory); }
-#score .note.black { color: var(--ash); }   /* black-key notes take the black pieces' outline color */
-#score .note.held { opacity: .5; }
+#score .key rect { fill: var(--bg); }
+#score .note { transition: opacity 300ms; }
+#score .note { color: var(--ivory); }
+#score .accidental, #score .flat { fill: currentColor; font: 10px/1 ui-monospace, Menlo, monospace; }
+#score .flat { fill: var(--ash); }
+#score .dot { fill: currentColor; }
+#score .staff .hitline { stroke: rgb(var(--spot)); stroke-width: 1.5; opacity: .6; }
+#score .note.hit { color: rgb(var(--spot)); filter: drop-shadow(0 0 4px rgba(var(--spot), .9)); }
+#score .note.miss { opacity: .25; }
 #score .head { fill: currentColor; stroke: currentColor; stroke-width: 1.2; }
-#score .hollow .head { fill: var(--bg); }
+#score .hollow { fill: var(--bg); }
 #score .stem, #score .flag { stroke: currentColor; stroke-width: 1.2; fill: none; }
 #score .ledger { stroke: #6d6962; stroke-width: 1; }
-#score .move { font: 12px/1 ui-monospace, Menlo, monospace; animation: appear 200ms ease-out; }
-#score .move.white { fill: var(--ivory); }
-#score .move.black { fill: var(--ash); }
-#score .bar { stroke: #4d4a46; stroke-width: 0.75; animation: appear 200ms ease-out; }
+#score .move { font: 12px/1 ui-monospace, Menlo, monospace; fill: var(--ivory); animation: appear 200ms ease-out; }
 
 @keyframes appear {
   from { opacity: 0; }
@@ -205,6 +262,21 @@ html, body {
 .key.white.down { background: #cfc8bb; }
 .key.black.down { background: #3a3835; }
 
+/* The answer key glows; a miss flashes red and shakes. */
+.key.target { animation: lit 1.4s ease-in-out infinite; }
+.key.white.target { background: rgb(var(--spot)); }
+.key.black.target { background: #8a7a55; }
+@keyframes lit {
+  50% { box-shadow: inset 0 -40px 40px -20px rgba(255, 200, 120, .55); }
+}
+.key.wrong { animation: miss 300ms; }
+.key.white.wrong { background: #d98a7f; }
+.key.black.wrong { background: #7a2e27; }
+@keyframes miss {
+  25% { translate: -3px 0; }
+  75% { translate: 3px 0; }
+}
+
 /* ---------- start screen ---------- */
 #start {
   position: fixed;
@@ -220,6 +292,7 @@ html, body {
   transition: opacity 400ms ease-out;
 }
 #start.gone { opacity: 0; pointer-events: none; }
+#start.end { background: rgba(11, 11, 12, .55); }
 #start p { margin: 0; }
 #start .title { font-size: 18px; color: var(--ivory); }
 #start .hint  { font-size: 12px; color: var(--ash); animation: breathe 2s ease-in-out infinite; }

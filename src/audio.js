@@ -1,16 +1,5 @@
 import * as Tone from 'tone';
 
-// C major pentatonic pitch classes. Every key snaps to the nearest one.
-const SCALE = [0, 2, 4, 7, 9];
-
-export function snapToScale(midi) {
-  for (let d = 0; d < 12; d++) {
-    if (SCALE.includes((midi + d) % 12)) return midi + d;   // ties go up
-    if (SCALE.includes((((midi - d) % 12) + 12) % 12)) return midi - d;
-  }
-  return midi;
-}
-
 // Sampled instruments, self-hosted in public/samples/<name>/ (all CC-BY 3.0:
 // piano = Salamander Grand Piano by Alexander Holm, others = nbrosowsky/tonejs-instruments).
 // Sampler pitch-shifts the nearest sample to fill the notes in between.
@@ -24,6 +13,9 @@ export const INSTRUMENTS = {
   guitar:    { label: 'Guitar',    octave: 0,  urls: urls(['A3', 'Cs4', 'E4', 'Fs4', 'Gs4', 'A4', 'B4', 'Cs5', 'E5']) },
   xylophone: { label: 'Xylophone', octave: 12, urls: urls(['G4', 'C5', 'G5', 'C6', 'G6']) },
 };
+
+// Keys sound right away (Tone's default 0.1 s look-ahead would lag every tap).
+Tone.getContext().lookAhead = 0.01;
 
 const reverb = new Tone.Reverb({ decay: 5, preDelay: 0.03, wet: 0.5 }).toDestination();
 
@@ -50,8 +42,8 @@ export function setInstrument(name) {
   sampler(name);
 }
 
-const freq = (midi) =>
-  Tone.Frequency(snapToScale(midi) + INSTRUMENTS[current].octave, 'midi').toFrequency();
+const freq = (midi, name = current) =>
+  Tone.Frequency(midi + INSTRUMENTS[name].octave, 'midi').toFrequency();
 
 // iOS only lets audio start inside a gesture that counts as "user activation" — touchend /
 // pointerup / click, not touchstart / pointerdown. So unlock on release, and keep trying on
@@ -81,6 +73,28 @@ export function noteOff(midi) {
   if (!running()) return;
   for (const name in samplers) {
     const s = samplers[name];
-    if (s.ready) s.triggerRelease(Tone.Frequency(snapToScale(midi) + INSTRUMENTS[name].octave, 'midi').toFrequency());
+    if (s.ready) s.triggerRelease(freq(midi, name));
   }
 }
+
+// Backing track. Its clock is the game clock: songTime() = seconds into the file.
+let track;
+let startedAt = null;
+
+export function loadTrack(url) {
+  track = new Tone.Player(`${import.meta.env.BASE_URL}${url}`).toDestination();
+}
+
+export async function playTrack() {
+  await Tone.loaded();
+  stopTrack();
+  startedAt = Tone.immediate() + 0.15;
+  track.start(startedAt);
+}
+
+export function stopTrack() {
+  if (track?.state === 'started') track.stop();
+  startedAt = null;
+}
+
+export const songTime = () => (startedAt === null ? null : Tone.immediate() - startedAt);

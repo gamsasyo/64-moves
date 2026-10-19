@@ -1,81 +1,35 @@
 const SIZE = 8;
-
-const ORTHO = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-const DIAG = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
 const KNIGHT = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]];
 
-const RULES = {
-  rook:   { dirs: ORTHO, slides: true },
-  bishop: { dirs: DIAG, slides: true },
-  queen:  { dirs: [...ORTHO, ...DIAG], slides: true },
-  knight: { dirs: KNIGHT, slides: false },
-};
+const inside = ({ x, y }) => x >= 0 && x < SIZE && y >= 0 && y < SIZE;
+const same = (a, b) => a.x === b.x && a.y === b.y;
+const hops = (p) => KNIGHT.map(([dx, dy]) => ({ x: p.x + dx, y: p.y + dy })).filter(inside);
 
-// Two sets of five, facing each other in the middle. y = 0 is the top row.
-// Pawns carry a walking direction (-1 = up, +1 = down) that flips when they turn around.
-export function createBoard() {
-  const set = (color, y, dir) => [
-    ['pawn', '♟'], ['knight', '♞'], ['bishop', '♝'], ['rook', '♜'], ['queen', '♛'],
-  ].map(([type, glyph], i) => ({
-    id: `${color[0]}-${type}`, type, color, glyph, x: 2 + i, y,
-    ...(type === 'pawn' && { dir }),
-  }));
-  return [...set('white', 5, -1), ...set('black', 2, 1)];
-}
-
-const inside = (x, y) => x >= 0 && x < SIZE && y >= 0 && y < SIZE;
-const occupied = (pieces, x, y) => pieces.some((p) => p.x === x && p.y === y);
-
-// Pawn steps one square forward; if the edge or another piece is in the way,
-// it turns around and steps back instead.
-function pawnStep(pieces, p) {
-  for (const dir of [p.dir, -p.dir]) {
-    const y = p.y + dir;
-    if (inside(p.x, y) && !occupied(pieces, p.x, y)) return { x: p.x, y, dir };
+// Squares that can land on a goal in exactly k knight moves (knights alternate square colour,
+// so "at most k" isn't enough).
+function reachIn(k, goals, blocked) {
+  let set = goals;
+  for (let i = 0; i < k; i++) {
+    set = [...new Map(set.flatMap(hops).filter((q) => !(blocked && same(q, blocked)))
+      .map((q) => [`${q.x},${q.y}`, q])).values()];
   }
-  return null;
+  return set;
 }
 
-// Every square the piece can reach this turn, sliding up to `distance`.
-// Never leaves the board, never lands on or passes through another piece.
-function candidates(pieces, piece, distance) {
-  const { dirs, slides } = RULES[piece.type];
-  const out = [];
-  for (const [dx, dy] of dirs) {
-    const steps = slides ? distance : 1;
-    let reached = null;
-    for (let s = 1; s <= steps; s++) {
-      const x = piece.x + dx * s;
-      const y = piece.y + dy * s;
-      if (!inside(x, y) || occupied(pieces, x, y)) break;
-      reached = { x, y, dy: Math.sign(dy), len: s };
-    }
-    if (reached) out.push(reached);
+// One random knight move from `from`, never onto `blocked`.
+// With a goal, only moves that can still reach it within `left` more moves count.
+export function randomKnight(from, { blocked, goal, left } = {}) {
+  let options = hops(from).filter((q) => !(blocked && same(q, blocked)));
+  if (goal) {
+    const ready = reachIn(left - 1, goal, blocked);
+    const ok = options.filter((q) => ready.some((r) => same(q, r)));
+    if (ok.length) options = ok;
   }
-  return out;
+  return options[Math.floor(Math.random() * options.length)];
 }
 
-// Rising melody → move up the board (dy = -1), falling → down.
-// Prefer matching direction, then the longest move; random among ties.
-function pick(options, contour) {
-  if (!options.length) return null;
-  const wantDy = -contour;
-  const score = (o) => (contour && o.dy === wantDy ? 100 : 0) + o.len + Math.random();
-  return options.reduce((best, o) => (score(o) > score(best) ? o : best));
-}
-
-// Moves exactly one piece. Returns false if it was boxed in.
-export function applyPhrase(pieces, action) {
-  const p = pieces.find((q) => q.id === action.piece);
-  if (p.type === 'pawn') {
-    const step = pawnStep(pieces, p);
-    if (!step) return false;
-    Object.assign(p, step);
-    return true;
-  }
-  const target = pick(candidates(pieces, p, action.distance), action.contour);
-  if (!target) return false;
-  p.x = target.x;
-  p.y = target.y;
-  return true;
+// The ㄱ path for a knight move: the long leg first, then the turn.
+export function knightPath(from, to) {
+  const corner = Math.abs(to.x - from.x) === 2 ? { x: to.x, y: from.y } : { x: from.x, y: to.y };
+  return [from, corner, to];
 }

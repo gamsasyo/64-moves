@@ -6,7 +6,9 @@ const BLACK = [
 ];
 
 // onDown({ midi, isBlack }) when a key is pressed, onUp(note, heldMs) when it's let go.
+// Returns setTarget(midi) to light the answer key and wrong(note) to flash a miss.
 export function createKeyboard(el, { onDown, onUp }) {
+  const keys = new Map();   // midi → key element
   const press = (keyEl, note) => (e) => {
     e.preventDefault();
     keyEl.classList.add('down');
@@ -25,6 +27,7 @@ export function createKeyboard(el, { onDown, onUp }) {
       keyEl.addEventListener(ev, release(keyEl, note));
     }
     el.appendChild(keyEl);
+    keys.set(note.midi, keyEl);
   };
 
   WHITE.forEach((midi) => {
@@ -39,4 +42,25 @@ export function createKeyboard(el, { onDown, onUp }) {
     k.style.left = `${((after + 1) / WHITE.length) * 100}%`;
     addKey(k, { midi, isBlack: true });
   });
+
+  return {
+    // Lights one key for the note: the same letter, nearest in pitch (so C lights low or high C, not both).
+    // null clears it.
+    setTarget(midi) {
+      let best = null;
+      if (midi !== null) {
+        for (const m of keys.keys()) {
+          if (m % 12 === midi % 12 && (best === null || Math.abs(m - midi) < Math.abs(best - midi))) best = m;
+        }
+      }
+      for (const [m, k] of keys) k.classList.toggle('target', m === best);
+    },
+    wrong(note) {
+      const k = keys.get(note.midi);
+      k.classList.remove('wrong');
+      void k.offsetWidth;   // restart animation
+      k.classList.add('wrong');
+      k.addEventListener('animationend', () => k.classList.remove('wrong'), { once: true });
+    },
+  };
 }
