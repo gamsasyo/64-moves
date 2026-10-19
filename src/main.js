@@ -107,7 +107,7 @@ const finishers = new Map();   // note → turns its score head into the right n
 
 // Every note to play, in order. The knight dances its phrase's move on the first note of the
 // phrase that's hit; a phrase with every note missed still gets its stage effects.
-const CHART = SCRIPT.flatMap((step) => step.notes.map((n, k) => ({ ...n, step, last: k === step.notes.length - 1 })));
+const CHART = SCRIPT.flatMap((step) => step.notes.map((n, k) => ({ ...n, step, first: k === 0, last: k === step.notes.length - 1 })));
 let stage;
 let lane;
 let next;
@@ -211,9 +211,12 @@ const keyboard = createKeyboard(document.getElementById('keyboard'), {
     if (t === null || !want || Math.abs(t - want.time) > WINDOW) return;   // off the beat: just a note
     if (note.midi % 12 === want.midi % 12) {
       keyboard.hit(note);
-      boardEl.classList.remove('flash');
-      void boardEl.offsetWidth;   // restart animation
-      boardEl.classList.add('flash');
+      // The stage flashes once a phrase, on its first note, once the knight rides free (19–).
+      if (want.first && want.step.n >= 19) {
+        boardEl.classList.remove('flash');
+        void boardEl.offsetWidth;   // restart animation
+        boardEl.classList.add('flash');
+      }
       settle(true);
     }
     else {

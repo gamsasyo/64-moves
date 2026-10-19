@@ -6,32 +6,10 @@
 //   grid  : walk through these squares on the board (ㄱ moves are split over two phrases)
 //   curve : bend through `via` on the way to `to`
 //   glide : slide straight to a point
-//   L     : one random knight move (steered toward `goal` near the end)
-//   free  : off the grid — down / up / along the spiral
-
-// Spiral from the sketch: starts at the bottom, winds clockwise inward 1.5 turns,
-// then shoots out to the top right. Six quarter-turns + the exit = moves 28–34.
-function spiral() {
-  const c = 3.5;
-  const at = (deg) => {
-    const t = (deg - 90) / 540;                 // 0 → 1 over the whole spiral
-    const r = 3 - 2.6 * t;
-    const a = (deg * Math.PI) / 180;
-    return { x: c + r * Math.cos(a), y: c + r * Math.sin(a) };
-  };
-  const legs = [];
-  for (let i = 0; i < 6; i++) {
-    const pts = [];
-    for (let d = 90 + i * 90; d <= 180 + i * 90; d += 10) pts.push(at(d));
-    legs.push(pts);
-  }
-  legs.push([{ x: 6.6, y: 0.4 }]);              // the arrow out
-  return legs;
-}
-const SPIRAL = spiral();
-
-// Riding: swing down and up across the board, drifting left to right.
-const RIDE = [1, 2, 3, 4, 5, 6, 5, 4, 3.5].map((x, i) => ({ x, y: i % 2 ? 0.5 : 6.5 }));
+//   L     : one random ㄱ move of any size, e.g. 4 then 2 (steered toward `goal` near the end)
+//   ride  : off the grid on the bike, a random winding path to somewhere low ('down') or high ('up')
+//   spiral: one leg of the spiral from the sketch (0–5), then 'out' — drawn afresh each play
+// `dur` = seconds until the next phrase, so the slow off-grid moves can flow right into it.
 
 export const BIKE_HOME = { x: 0, y: 7 };              // where the bike is left after 35
 
@@ -115,8 +93,8 @@ export const SCRIPT = [
   /* 16 */ [{ L: true }, { bike: 'approach' }],
   /* 17 */ [{ L: true }, { bike: 'approach' }],
   /* 18 */ [{ L: true }, { bike: 'board' }],
-  ...RIDE.map((p) => [{ free: [p] }]),   // 19–27
-  ...SPIRAL.map((pts, i) => [{ free: pts }, i === 0 ? { rain: 1 } : null]),   // 28–34
+  ...[...'dudududud'].map((d) => [{ ride: d === 'd' ? 'down' : 'up' }]),   // 19–27
+  ...[0, 1, 2, 3, 4, 5, 'out'].map((leg) => [{ spiral: leg }, leg === 0 ? { rain: 1 } : null]),   // 28–34
   /* 35 */ [{ glide: { x: 6, y: 1 } }, { bike: 'leave', at: BIKE_HOME }],
   /* 36 */ [{ L: true }, { firework: 'one' }],
   /* 37 */ [{ L: true }],
@@ -129,7 +107,8 @@ export const SCRIPT = [
   /* 44 */ [{ stop: true }, { firework: 'many' }],
 ].map(([move, fx], i) => {
   const notes = NOTES[i].map(([tick, midi, length]) => ({ midi, length, time: timeOf(tick) }));
-  return { n: i + 1, notes, move, fx: fx ?? null };
+  const dur = NOTES[i + 1] ? timeOf(NOTES[i + 1][0][0]) - notes[0].time : 4;
+  return { n: i + 1, notes, move, fx: fx ?? null, dur };
 });
 
 // 36–43 wander at random but must end beside the bike.

@@ -128,7 +128,7 @@ body:not(.rhythm) .piece.glow::before { opacity: 1; }
 }
 
 /* On the bike the dancer sits a little higher, above the saddle. */
-.piece.riding { top: -6.5%; }
+.piece.riding { top: -3.5%; }
 
 /* Afterimage left at the old square when a dancer moves. */
 .piece.ghost {
@@ -150,9 +150,8 @@ body:not(.rhythm) .piece.glow::before { opacity: 1; }
   width: 12.5%;
   height: 12.5%;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 6%;
   color: var(--ivory);
   opacity: 0;
   transition: opacity 1200ms;
@@ -161,6 +160,27 @@ body:not(.rhythm) .piece.glow::before { opacity: 1; }
 }
 .bike.shown { opacity: .85; }
 .bike svg { width: 92%; }
+
+/* The knight's whole path, drawn in at the end. */
+.trail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.trail polyline {
+  fill: none;
+  stroke-width: .045;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: .85;
+  animation: draw 4s ease-in-out forwards;
+}
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
 
 .rain {
   position: absolute;
@@ -313,17 +333,17 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
   75% { translate: 3px 0; }
 }
 
-/* A match also flashes the stage. */
+/* The first note of a phrase also flashes the stage (from the free ride on). */
 #board::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 245, 220, .6), rgba(255, 245, 220, .18) 60%, transparent);
+  background: radial-gradient(circle, rgba(255, 245, 220, .32), rgba(255, 245, 220, .08) 60%, transparent);
   opacity: 0;
 }
-#board.flash::after { animation: stageflash 350ms ease-out; }
+#board.flash::after { animation: stageflash 1400ms cubic-bezier(.1, .6, .3, 1); }
 @keyframes stageflash {
   from { opacity: 1; }
   to   { opacity: 0; }
@@ -355,7 +375,7 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: rgba(11, 11, 12, .6);
+  background: rgba(11, 11, 12, .45);
   font-family: ui-monospace, Menlo, monospace;
   transition: opacity 400ms ease-out;
 }
