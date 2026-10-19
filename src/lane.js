@@ -2,7 +2,7 @@ const NS = 'http://www.w3.org/2000/svg';
 const H = 92;
 const HALF = 4;                 // half a staff space (one diatonic step)
 const BOTTOM_LINE = 72;         // E4 sits on the bottom line (treble clef)
-const MOVE_Y = 13;              // chess-notation band above the staff
+const MOVE_Y = 13;              // where a move's notation pops up, above the staff
 const HIT_X = 62;               // the line notes have to be played on (clear of the key signature)
 const SPEED = 110;              // px per second
 
@@ -86,7 +86,7 @@ export function createLane(container, chart) {
       g.appendChild(el('path', { class: 'flag', d: up ? `M${sx} ${tip} q7 6 6 14` : `M${sx} ${tip} q7 -6 6 -14` }));
     }
     roll.appendChild(g);
-    return { g, x };
+    return { g };
   });
 
   return {
@@ -101,13 +101,19 @@ export function createLane(container, chart) {
     },
     // pos = where the knight landed (with x, y) if this note made it dance.
     mark(i, hit, pos) {
-      const { g, x } = notes[i];
+      const { g } = notes[i];
       g.classList.add(hit ? 'hit' : 'miss');
       if (!pos) return;
+      // The move pops up right on the hit line and drifts up-right toward the board as it fades.
       const onSquare = Number.isInteger(pos.x) && Number.isInteger(pos.y);
-      const label = el('text', { class: 'move', x, y: MOVE_Y, 'text-anchor': 'middle' });
+      const box = svg.getBoundingClientRect();
+      const label = document.createElement('div');
+      label.className = 'move-pop';
+      label.style.left = `${box.left + HIT_X}px`;
+      label.style.top = `${box.top + MOVE_Y}px`;
       label.textContent = '♞︎' + (onSquare ? squareOf(pos.x, pos.y) : '~');
-      roll.appendChild(label);
+      label.addEventListener('animationend', () => label.remove());
+      document.body.appendChild(label);
     },
   };
 }

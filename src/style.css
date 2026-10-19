@@ -267,6 +267,29 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
 #score .move.black { fill: var(--ash); }
 #score .bar { stroke: #4d4a46; stroke-width: 0.75; animation: appear 200ms ease-out; }
 
+/* Rhythm game: a hit's chess move pops up on the hit line and floats off toward the board. */
+.move-pop {
+  position: fixed;
+  z-index: 6;
+  translate: -50% -50%;
+  font: 15px/1 ui-monospace, Menlo, monospace;
+  color: rgb(var(--spot));
+  text-shadow: 0 0 6px rgba(var(--spot), .8);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: pop 2600ms linear forwards;
+}
+@keyframes pop {
+  /* a curve: mostly rightward first, then bending up and away */
+  0%   { transform: translate(0, 4px) scale(.8); opacity: 0; }
+  10%  { transform: translate(0, 0) scale(1.15); opacity: 1; }
+  30%  { transform: translate(40px, -4px) scale(1); opacity: 1; }
+  50%  { transform: translate(78px, -14px); opacity: 1; }
+  70%  { transform: translate(106px, -34px); opacity: .7; }
+  85%  { transform: translate(120px, -56px); opacity: .35; }
+  100% { transform: translate(128px, -80px); opacity: 0; }
+}
+
 /* Rhythm-game life gauge. */
 #score .gauge rect { fill: var(--line); }
 #score .gauge .fill { fill: rgb(var(--spot)); transition: width 200ms ease-out; }
