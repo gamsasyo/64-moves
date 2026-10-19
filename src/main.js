@@ -1,5 +1,5 @@
 import { createKeyboard } from './keyboard.js';
-import { noteOn, noteOff, unlock, setInstrument, setSnap, INSTRUMENTS, loadTrack, playTrack, stopTrack, songTime } from './audio.js';
+import { noteOn, noteOff, unlock, setInstrument, setSnap, INSTRUMENTS, loadTrack, playTrack, stopTrack, songTime, loadEnding, playEnding, stopEnding } from './audio.js';
 import { createPhraseTracker, interpret } from './phrase.js';
 import { createBoard, applyPhrase } from './chess.js';
 import { createRenderer } from './pieces.js';
@@ -7,6 +7,7 @@ import { createScore } from './score.js';
 import { createStage } from './render.js';
 import { createLane } from './lane.js';
 import { SCRIPT, TRACK } from './script.js';
+import { createEnding } from './ending.js';
 
 const WINDOW = 0.22;  // a tap counts if it's within this many seconds of the note (♪ = 0.34 s)
 const LEAD = 1.2;     // the answer key starts glowing this long before its note
@@ -125,6 +126,7 @@ function enterRhythm() {
   gameBtn.textContent = '✕ 나가기';
   if (!trackLoaded) {
     loadTrack(TRACK);
+    loadEnding('audio/ending.mp3');
     trackLoaded = true;
   }
   boardEl.replaceChildren();
@@ -171,12 +173,34 @@ function settle(hit) {
   next++;
   changeLife(hit ? LIFE.hit : -LIFE.miss);
   if (life > 0 && next === CHART.length) {
+    // Let the route finish drawing itself, then the closing scene takes over.
     endTimer = setTimeout(() => {
       stopTrack();
-      showResult(`끝 · ${hits} / ${CHART.length}`);
+      showEnding();
     }, 6000);
   }
 }
+
+// Closing scene: loops with its song until "처음으로".
+const endingEl = document.getElementById('ending');
+const ending = createEnding(endingEl.querySelector('.stage'));
+
+function showEnding() {
+  endingEl.querySelector('.score').textContent = `${hits} / ${CHART.length}`;
+  endingEl.classList.remove('gone');
+  ending.start();
+  playEnding();
+}
+
+document.getElementById('insta').addEventListener('pointerup', () => {
+  window.open('https://www.instagram.com/pongdang_dance/', '_blank', 'noopener');
+});
+document.getElementById('home').addEventListener('pointerup', () => {
+  endingEl.classList.add('gone');
+  ending.stop();
+  stopEnding();
+  enterFree();
+});
 
 function showResult(text) {
   result.querySelector('.title').textContent = text;

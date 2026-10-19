@@ -116,3 +116,20 @@ export function stopTrack() {
 }
 
 export const songTime = () => (startedAt === null ? null : Tone.immediate() - startedAt);
+
+// Ending song: loops under the closing scene. Played through the same (already unlocked) context,
+// since it starts from a timer, not a tap.
+let ending;
+
+export function loadEnding(url) {
+  ending ??= new Tone.Player({ url: `${import.meta.env.BASE_URL}${url}`, loop: true, fadeIn: 1.5, fadeOut: 1 }).toDestination();
+}
+
+export async function playEnding() {
+  await Tone.loaded();
+  if (ending.state !== 'started') ending.start();
+}
+
+export function stopEnding() {
+  if (ending?.state === 'started') ending.stop();
+}

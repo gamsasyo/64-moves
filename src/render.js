@@ -1,7 +1,7 @@
 import { randomL, lPath } from './board.js';
 import { START, BIKE_HOME, GOAL, LAST_L } from './script.js';
 
-const BIKE_SVG = `<svg viewBox="0 0 32 20" fill="none" stroke="currentColor" stroke-width="1.6"
+export const BIKE_SVG = `<svg viewBox="0 0 32 20" fill="none" stroke="currentColor" stroke-width="1.6"
   stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="13" r="5.5"/><circle cx="25" cy="13" r="5.5"/>
   <path d="M7 13 12 5h11l2 8M12 5l5 8h8M23 5l-1-3h3M11 3h3"/></svg>`;
 
