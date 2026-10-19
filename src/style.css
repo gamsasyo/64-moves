@@ -57,8 +57,9 @@ html, body {
 #info h1 { margin: 0 0 4px; font-size: 13px; font-weight: 500; color: var(--ivory); }
 #info .row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 
-/* Instrument picker, next to the description line. */
-#instrument {
+/* Rhythm-game switch and instrument picker, next to the description line. */
+#info .buttons { display: flex; gap: 6px; flex-shrink: 0; }
+#game, #instrument, #result button {
   flex-shrink: 0;
   padding: 3px 6px;
   font: 11px/1 ui-monospace, Menlo, monospace;
@@ -100,6 +101,10 @@ html, body {
 }
 
 .piece.white { color: var(--ivory); }
+.piece.black {
+  color: var(--ink);
+  -webkit-text-stroke: 1px var(--ash);
+}
 /* Spotlight pooled under the dancer. */
 .piece::before {
   content: '';
@@ -110,6 +115,16 @@ html, body {
   background: radial-gradient(circle, rgba(var(--spot), .22) 0%, rgba(var(--spot), .06) 35%, transparent 65%);
   opacity: .7;
   pointer-events: none;
+}
+
+/* Free play: ten dancers glide square to square, and the one about to move brightens. */
+body:not(.rhythm) .piece { transition: transform 450ms cubic-bezier(.4, 0, .2, 1); }
+body:not(.rhythm) .piece::before { opacity: .45; transition: opacity 200ms; }
+body:not(.rhythm) .piece.glow::before { opacity: 1; }
+.piece.stuck { animation: shake 250ms; }
+@keyframes shake {
+  25% { margin-left: -4px; }
+  75% { margin-left: 4px; }
 }
 
 /* On the bike the dancer sits a little higher, above the saddle. */
@@ -214,6 +229,7 @@ html, body {
 #score .flat { fill: var(--ash); }
 #score .dot { fill: currentColor; }
 #score .staff .hitline { stroke: rgb(var(--spot)); stroke-width: 1.5; opacity: .6; }
+#score .staff .hitzone { fill: rgba(var(--spot), .14); stroke: none; }
 #score .note.hit { color: rgb(var(--spot)); filter: drop-shadow(0 0 4px rgba(var(--spot), .9)); }
 #score .note.miss { opacity: .25; }
 #score .head { fill: currentColor; stroke: currentColor; stroke-width: 1.2; }
@@ -221,6 +237,20 @@ html, body {
 #score .stem, #score .flag { stroke: currentColor; stroke-width: 1.2; fill: none; }
 #score .ledger { stroke: #6d6962; stroke-width: 1; }
 #score .move { font: 12px/1 ui-monospace, Menlo, monospace; fill: var(--ivory); animation: appear 200ms ease-out; }
+
+/* Free-play score: notes appear as played, barlines close phrases. */
+body:not(.rhythm) #score .roll { transition: transform 250ms ease-out; }
+body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: opacity 150ms; }
+#score .note.black { color: var(--ash); }
+#score .note.held { opacity: .5; }
+#score .hollow .head { fill: var(--bg); }
+#score .move.black { fill: var(--ash); }
+#score .bar { stroke: #4d4a46; stroke-width: 0.75; animation: appear 200ms ease-out; }
+
+/* Rhythm-game life gauge. */
+#score .gauge rect { fill: var(--line); }
+#score .gauge .fill { fill: rgb(var(--spot)); transition: width 200ms ease-out; }
+#score .gauge.low .fill { fill: #d9604f; }
 
 @keyframes appear {
   from { opacity: 0; }
@@ -262,12 +292,18 @@ html, body {
 .key.white.down { background: #cfc8bb; }
 .key.black.down { background: #3a3835; }
 
-/* The answer key glows; a miss flashes red and shakes. */
-.key.target { animation: lit 1.4s ease-in-out infinite; }
-.key.white.target { background: rgb(var(--spot)); }
-.key.black.target { background: #8a7a55; }
+/* The answer key glows gold and pulses; a match flashes white; a miss flashes red and shakes. */
+.key.target { animation: lit 700ms ease-in-out infinite alternate; }
+.key.white.target { background: rgb(var(--spot)); box-shadow: inset 0 0 0 3px #fff; }
+.key.black.target { background: #8a7a55; border-color: rgb(var(--spot)); box-shadow: 0 0 14px 4px rgba(var(--spot), .7); }
 @keyframes lit {
-  50% { box-shadow: inset 0 -40px 40px -20px rgba(255, 200, 120, .55); }
+  from { filter: brightness(.85); }
+  to   { filter: brightness(1.2) drop-shadow(0 0 12px rgba(var(--spot), .95)); }
+}
+.key.hit { animation: flash 380ms ease-out; }
+@keyframes flash {
+  0%, 40% { background: #fff; filter: drop-shadow(0 0 18px #fff) drop-shadow(0 0 8px #ffe9b0); }
+  100%    { filter: none; }
 }
 .key.wrong { animation: miss 300ms; }
 .key.white.wrong { background: #d98a7f; }
@@ -275,6 +311,22 @@ html, body {
 @keyframes miss {
   25% { translate: -3px 0; }
   75% { translate: 3px 0; }
+}
+
+/* A match also flashes the stage. */
+#board::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 245, 220, .6), rgba(255, 245, 220, .18) 60%, transparent);
+  opacity: 0;
+}
+#board.flash::after { animation: stageflash 350ms ease-out; }
+@keyframes stageflash {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 /* ---------- start screen ---------- */
@@ -291,10 +343,29 @@ html, body {
   font-family: ui-monospace, Menlo, monospace;
   transition: opacity 400ms ease-out;
 }
-#start.gone { opacity: 0; pointer-events: none; }
-#start.end { background: rgba(11, 11, 12, .55); }
+#start.gone, #result.gone { opacity: 0; pointer-events: none; }
+
+/* Rhythm-game result: cleared or game over. */
+#result {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(11, 11, 12, .6);
+  font-family: ui-monospace, Menlo, monospace;
+  transition: opacity 400ms ease-out;
+}
+#result .title { margin: 0; font-size: 18px; color: var(--ivory); }
+#result .buttons { display: flex; gap: 12px; }
+#result button { padding: 8px 16px; font-size: 13px; }
 #start p { margin: 0; }
 #start .title { font-size: 18px; color: var(--ivory); }
+#start .about { max-width: min(320px, 100vw - 48px); margin: 4px 0 8px; }
+#start .about p { margin: 0 0 10px; font-size: 12px; line-height: 1.7; color: var(--ash); word-break: keep-all; }
 #start .hint  { font-size: 12px; color: var(--ash); animation: breathe 2s ease-in-out infinite; }
 
 @keyframes breathe {

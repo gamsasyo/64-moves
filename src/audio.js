@@ -1,5 +1,23 @@
 import * as Tone from 'tone';
 
+// C major pentatonic pitch classes. In free play every key snaps to the nearest one;
+// the rhythm game turns the snap off so keys sound the song's real semitones.
+const SCALE = [0, 2, 4, 7, 9];
+let snap = true;
+
+export function snapToScale(midi) {
+  if (!snap) return midi;
+  for (let d = 0; d < 12; d++) {
+    if (SCALE.includes((midi + d) % 12)) return midi + d;   // ties go up
+    if (SCALE.includes((((midi - d) % 12) + 12) % 12)) return midi - d;
+  }
+  return midi;
+}
+
+export function setSnap(on) {
+  snap = on;
+}
+
 // Sampled instruments, self-hosted in public/samples/<name>/ (all CC-BY 3.0:
 // piano = Salamander Grand Piano by Alexander Holm, others = nbrosowsky/tonejs-instruments).
 // Sampler pitch-shifts the nearest sample to fill the notes in between.
@@ -43,7 +61,7 @@ export function setInstrument(name) {
 }
 
 const freq = (midi, name = current) =>
-  Tone.Frequency(midi + INSTRUMENTS[name].octave, 'midi').toFrequency();
+  Tone.Frequency(snapToScale(midi) + INSTRUMENTS[name].octave, 'midi').toFrequency();
 
 // iOS only lets audio start inside a gesture that counts as "user activation" — touchend /
 // pointerup / click, not touchstart / pointerdown. So unlock on release, and keep trying on

@@ -1,11 +1,18 @@
 import { createKeyboard } from './keyboard.js';
-import { noteOn, noteOff, unlock, setInstrument, INSTRUMENTS, loadTrack, playTrack, stopTrack, songTime } from './audio.js';
+import { noteOn, noteOff, unlock, setInstrument, setSnap, INSTRUMENTS, loadTrack, playTrack, stopTrack, songTime } from './audio.js';
+import { createPhraseTracker, interpret } from './phrase.js';
+import { createBoard, applyPhrase } from './chess.js';
+import { createRenderer } from './pieces.js';
+import { createScore } from './score.js';
 import { createStage } from './render.js';
 import { createLane } from './lane.js';
 import { SCRIPT, TRACK } from './script.js';
 
-const WINDOW = 0.15;  // a tap counts if it's within this many seconds of the note (♪ = 0.34 s)
+const WINDOW = 0.22;  // a tap counts if it's within this many seconds of the note (♪ = 0.34 s)
 const LEAD = 1.2;     // the answer key starts glowing this long before its note
+
+// Life gauge (0 … 100): a hit fills it, a missed note or a wrong key drains it; empty = game over.
+const LIFE = { start: 60, hit: 4, miss: 12, wrong: 6 };
 
 // iOS Safari ignores user-scalable=no: block double-tap zoom and pinch zoom by hand.
 // Pointer events still fire, so the keys keep working.
@@ -14,13 +21,13 @@ document.addEventListener('touchend', (e) => e.preventDefault(), { passive: fals
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 
 // Start screen: the tap that dismisses it is the gesture iOS needs to open audio,
-// and it starts the song. It comes back as the end screen after move 44.
+// so the very first key already sounds.
 const start = document.getElementById('start');
 start.addEventListener('pointerup', () => {
   unlock();
-  restart();
   start.classList.add('gone');
-});
+  start.addEventListener('transitionend', () => start.remove(), { once: true });
+}, { once: true });
 
 // Instrument audition: tap to cycle through the sampled instruments.
 const instrumentBtn = document.getElementById('instrument');
@@ -32,26 +39,119 @@ instrumentBtn.addEventListener('pointerup', () => {
   instrumentBtn.textContent = `♪ ${INSTRUMENTS[names[instrumentIndex]].label}`;
 });
 
-loadTrack(TRACK);
-const stage = createStage(document.getElementById('board'));
-const progress = document.getElementById('progress');
+const boardEl = document.getElementById('board');
+const scoreEl = document.getElementById('score');
+const desc = document.getElementById('desc');
+const gameBtn = document.getElementById('game');
+const result = document.getElementById('result');
+
+// Two modes share the stage, score strip and keyboard:
+// free play (default) — any phrase moves one of ten pieces;
+// rhythm game — play the circled notes along the track and the knight dances the script.
+let mode = null;
+
+gameBtn.addEventListener('pointerup', () => (mode === 'rhythm' ? enterFree() : enterRhythm()));
+document.getElementById('again').addEventListener('pointerup', () => {
+  result.classList.add('gone');
+  restart();
+});
+document.getElementById('leave').addEventListener('pointerup', () => {
+  result.classList.add('gone');
+  enterFree();
+});
+
+// ---------- free play ----------
+
+let pieces;
+let renderer;
+let score;
+
+function enterFree() {
+  if (mode === 'rhythm') {
+    stopTrack();
+    clearTimeout(endTimer);
+    stage.reset();
+    keyboard.setTarget(null);
+  }
+  mode = 'free';
+  document.body.classList.remove('rhythm');
+  setSnap(true);
+  desc.textContent = '건반을 치면 말이 움직입니다.';
+  gameBtn.textContent = '▶ 리듬게임';
+  boardEl.replaceChildren();
+  scoreEl.replaceChildren();
+  pieces = createBoard();
+  renderer = createRenderer(boardEl, pieces);
+  renderer.draw();
+  score = createScore(scoreEl);
+}
+
+const phrase = createPhraseTracker({
+  onUpdate(notes) {
+    if (mode === 'free') renderer.glow([interpret(notes).piece]);
+  },
+  onPhrase(notes) {
+    if (mode !== 'free') return;
+    const action = interpret(notes);
+    const moved = applyPhrase(pieces, action);
+    renderer.glow([]);
+    renderer.draw();
+    score.bar({ ...pieces.find((p) => p.id === action.piece), moved });
+    if (!moved) renderer.shake([action.piece]);
+  },
+});
+
+const finishers = new Map();   // note → turns its score head into the right note value
+
+// ---------- rhythm game ----------
 
 // Every note to play, in order. The knight dances its phrase's move on the first note of the
 // phrase that's hit; a phrase with every note missed still gets its stage effects.
 const CHART = SCRIPT.flatMap((step) => step.notes.map((n, k) => ({ ...n, step, last: k === step.notes.length - 1 })));
+let stage;
 let lane;
 let next;
 let hits;
+let life;
 let danced;
+let endTimer;
+let trackLoaded = false;
+
+function enterRhythm() {
+  mode = 'rhythm';
+  document.body.classList.add('rhythm');
+  setSnap(false);
+  desc.textContent = '빛나는 건반을 치면 나이트가 춤춥니다.';
+  gameBtn.textContent = '✕ 나가기';
+  if (!trackLoaded) {
+    loadTrack(TRACK);
+    trackLoaded = true;
+  }
+  boardEl.replaceChildren();
+  stage = createStage(boardEl);
+  restart();
+}
 
 function restart() {
+  clearTimeout(endTimer);
   next = 0;
   hits = 0;
+  life = LIFE.start;
   danced = new Set();
   stage.reset();
-  lane = createLane(document.getElementById('score'), CHART);
-  progress.textContent = `0 / ${CHART.length}`;
+  lane = createLane(scoreEl, CHART);
+  lane.gauge(life / 100);
   playTrack();
+}
+
+function changeLife(d) {
+  life = Math.max(0, Math.min(100, life + d));
+  lane.gauge(life / 100);
+  if (life === 0) {
+    stopTrack();
+    keyboard.setTarget(null);
+    showResult(`게임 오버 · ${hits} / ${CHART.length}`);
+  }
 }
 
 // Settles the next note, hit or missed, and moves on.
@@ -68,45 +168,66 @@ function settle(hit) {
     stage.play(step, false);
   }
   lane.mark(next, hit, pos);
-  progress.textContent = `${hits} / ${CHART.length}`;
   next++;
-  if (next === CHART.length) end();
+  changeLife(hit ? LIFE.hit : -LIFE.miss);
+  if (life > 0 && next === CHART.length) {
+    endTimer = setTimeout(() => {
+      stopTrack();
+      showResult(`끝 · ${hits} / ${CHART.length}`);
+    }, 6000);
+  }
 }
 
-function end() {
-  setTimeout(() => {
-    stopTrack();
-    start.querySelector('.title').textContent = `끝 · ${hits} / ${CHART.length}`;
-    start.querySelector('.hint').textContent = '탭해서 다시';
-    start.classList.add('end');
-    start.classList.remove('gone');
-  }, 6000);
+function showResult(text) {
+  result.querySelector('.title').textContent = text;
+  result.classList.remove('gone');
 }
 
 // Game clock: scroll the lane, light the coming key, and let notes that slipped past go.
 function frame() {
   const t = songTime();
-  if (t !== null) {
+  if (mode === 'rhythm' && t !== null) {
     lane.scroll(t);
-    while (next < CHART.length && t > CHART[next].time + WINDOW) settle(false);
+    // A miss can empty the gauge and stop the song mid-loop.
+    while (songTime() !== null && next < CHART.length && t > CHART[next].time + WINDOW) settle(false);
     const note = CHART[next];
-    keyboard.setTarget(note && note.time - t < LEAD ? note.midi : null);
+    if (songTime() !== null) keyboard.setTarget(note && note.time - t < LEAD ? note.midi : null);
   }
   requestAnimationFrame(frame);
 }
 
+// ---------- keys ----------
+
 const keyboard = createKeyboard(document.getElementById('keyboard'), {
   onDown(note) {
     noteOn(note.midi);
+    if (mode === 'free') {
+      finishers.set(note, score.note(note));
+      phrase.down(note);
+      return;
+    }
     const t = songTime();
     const want = CHART[next];
     if (t === null || !want || Math.abs(t - want.time) > WINDOW) return;   // off the beat: just a note
-    if (note.midi % 12 === want.midi % 12) settle(true);
-    else keyboard.wrong(note);
+    if (note.midi % 12 === want.midi % 12) {
+      keyboard.hit(note);
+      boardEl.classList.remove('flash');
+      void boardEl.offsetWidth;   // restart animation
+      boardEl.classList.add('flash');
+      settle(true);
+    }
+    else {
+      keyboard.wrong(note);
+      changeLife(-LIFE.wrong);
+    }
   },
-  onUp(note) {
+  onUp(note, heldMs) {
     noteOff(note.midi);
+    finishers.get(note)?.(heldMs);
+    finishers.delete(note);
+    phrase.up();
   },
 });
 
+enterFree();
 requestAnimationFrame(frame);

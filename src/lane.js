@@ -37,6 +37,7 @@ export function createLane(container, chart) {
   };
   const staff = el('g', { class: 'staff' });
   staffLines(staff, W);
+  staff.appendChild(el('rect', { class: 'hitzone', x: HIT_X - 7, y: BOTTOM_LINE - HALF * 10, width: 14, height: HALF * 12 }));
   staff.appendChild(el('line', { class: 'hitline', x1: HIT_X, x2: HIT_X, y1: BOTTOM_LINE - HALF * 10, y2: BOTTOM_LINE + HALF * 2 }));
   const roll = el('g', { class: 'roll' });
   // Key signature sits on top, on its own patch of staff, so played notes slide under it.
@@ -48,7 +49,11 @@ export function createLane(container, chart) {
     f.textContent = '♭';
     key.appendChild(f);
   });
-  svg.append(staff, roll, key);
+  // Life gauge along the top edge.
+  const gauge = el('g', { class: 'gauge' });
+  const fill = el('rect', { class: 'fill', x: 0, y: 0, width: W, height: 3 });
+  gauge.append(el('rect', { x: 0, y: 0, width: W, height: 3 }), fill);
+  svg.append(staff, roll, key, gauge);
   container.replaceChildren(svg);
 
   const notes = chart.map(({ midi, length, time }) => {
@@ -88,6 +93,11 @@ export function createLane(container, chart) {
     // Slide everything so that song time t sits on the hit line.
     scroll(t) {
       roll.style.transform = `translateX(${-t * SPEED}px)`;
+    },
+    // v = 0 … 1
+    gauge(v) {
+      fill.setAttribute('width', W * v);
+      gauge.classList.toggle('low', v < 0.25);
     },
     // pos = where the knight landed (with x, y) if this note made it dance.
     mark(i, hit, pos) {
