@@ -419,9 +419,9 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  justify-content: flex-start;
+  gap: 16px;
+  padding: max(20px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   background: var(--bg);
   font-family: ui-monospace, Menlo, monospace;
   transition: opacity 1500ms ease-out;
@@ -429,7 +429,8 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
 #ending.gone { opacity: 0; pointer-events: none; }
 #ending .stage {
   position: relative;
-  width: min(100vw - 32px, 56dvh);
+  width: min(100vw - 32px, 48dvh);
+  flex-shrink: 0;
   aspect-ratio: 1;
   overflow: hidden;
 }
@@ -449,16 +450,71 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
 .e-piece.riding { top: -3.5%; }
 .e-bike { z-index: 1; opacity: .85; }
 .e-bike svg { width: 92%; }
-#ending .credits { text-align: center; color: var(--ash); font-size: 12px; }
-#ending .credits .title { margin: 0 0 4px; font-size: 15px; color: var(--ivory); }
-#ending .credits .score { margin: 0 0 14px; }
-#ending dl { display: grid; grid-template-columns: auto auto; gap: 6px 14px; margin: 0; }
-#ending dt { text-align: right; }
-#ending dd { margin: 0; text-align: left; color: var(--ivory); }
-#ending .buttons { display: flex; gap: 12px; }
+#ending .score { margin: -8px 0 0; font-size: 11px; color: var(--ash); letter-spacing: .1em; }
+
+/* Performance credits roll up like a film's, looping; faded in and out at the edges. */
+#ending .credits {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+}
+#ending .roll { animation: roll 46s linear infinite; }
+@keyframes roll {
+  to { transform: translateY(-50%); }
+}
+#ending .roll > div {
+  padding: 40px 0 72px;
+  text-align: center;
+  font-family: -apple-system, 'Apple SD Gothic Neo', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: .06em;
+  line-height: 1.9;
+  color: var(--ivory);
+}
+#ending .roll p { margin: 0; }
+#ending .roll .work { font-size: 22px; font-weight: 400; letter-spacing: .08em; }
+#ending .roll .by { margin-top: 2px; font-size: 13px; color: var(--ash); letter-spacing: .3em; }
+#ending .roll .role {
+  margin: 26px 0 6px;
+  font: 10px/1 ui-monospace, Menlo, monospace;
+  letter-spacing: .32em;
+  color: var(--ash);
+}
+#ending .roll i { display: block; width: 28px; height: 1px; margin: 34px auto; background: var(--line); }
+
+/* Bottom bar: buttons left, the game's own credit pinned right. */
+#ending .foot {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+#ending .buttons { display: flex; gap: 8px; }
+#ending .maker {
+  margin: 0;
+  text-align: right;
+  font-family: -apple-system, 'Apple SD Gothic Neo', 'Helvetica Neue', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: .08em;
+  color: var(--ivory);
+}
+#ending .maker span {
+  display: block;
+  margin-bottom: 5px;
+  font: 9px/1 ui-monospace, Menlo, monospace;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
 #ending button {
-  padding: 8px 16px;
-  font: 13px/1 ui-monospace, Menlo, monospace;
+  padding: 8px 12px;
+  font: 12px/1 ui-monospace, Menlo, monospace;
   color: var(--ivory);
   background: rgba(11, 11, 12, .7);
   border: 1px solid var(--line);

@@ -78,7 +78,7 @@ function enterFree() {
   document.body.classList.remove('rhythm');
   setSnap(true);
   desc.textContent = '건반을 치면 말이 움직입니다.';
-  gameBtn.textContent = '▶ 리듬게임';
+  gameBtn.textContent = '▶ 게임하기';
   boardEl.replaceChildren();
   scoreEl.replaceChildren();
   pieces = createBoard();

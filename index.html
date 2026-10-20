@@ -14,7 +14,7 @@
         <div class="row">
           <p><span id="desc">건반을 치면 말이 움직입니다.</span></p>
           <div class="buttons">
-            <button id="game" type="button">▶ 리듬게임</button>
+            <button id="game" type="button">▶ 게임하기</button>
             <button id="instrument" type="button">♪ Piano</button>
           </div>
         </div>
@@ -28,7 +28,7 @@
       <div class="about">
         <p>〈64 Moves〉는 64칸 체스판을 무대로, 정해진 규칙과 그것을 수행하는 몸 사이의 작은 어긋남을 바라보는 퐁당댄스의 무용 작품입니다.</p>
         <p>이 페이지는 그 무대를 손 안에 옮겨 온 작은 버전입니다. 건반을 치면 말들이 움직이고, 같은 규칙이라도 치는 손에 따라 매번 다른 춤이 됩니다.</p>
-        <p>‘리듬게임’에서는 작품의 음악과 안무 스코어를 따라 나이트 하나를 춤추게 할 수 있습니다.</p>
+        <p>‘게임하기’에서는 작품의 음악과 안무 스코어를 따라 나이트 하나를 춤추게 할 수 있습니다.</p>
       </div>
       <p class="hint">탭해서 시작</p>
     </div>
@@ -41,17 +41,46 @@
     </div>
     <div id="ending" class="gone">
       <div class="stage"></div>
+      <p class="score"></p>
       <div class="credits">
-        <p class="title">〈64 Moves〉, 2026</p>
-        <p class="score"></p>
-        <dl>
-          <dt>게임 제작</dt><dd>신재영 / Maya</dd>
-          <dt>공연</dt><dd>퐁당댄스</dd>
-        </dl>
+        <!-- the roll is written twice so it can loop without a seam -->
+        <div class="roll">
+          <div>
+          <p class="work">〈64 Moves〉</p>
+          <p class="by">퐁당댄스</p>
+          <i></i>
+          <p class="role">무용수</p>
+          <p>김예원</p><p>김현호</p><p>노예슬</p><p>문소연</p><p>오지은</p>
+          <p>윤승민</p><p>이유진</p><p>이정우</p><p>임재홍</p><p>정진서</p>
+          <i></i>
+          <p class="role">주최 / 주관</p>
+          <p>PongDang! Sequence</p><p>박지현</p>
+          <p class="role">후원</p>
+          <p>경기문화재단</p>
+          <i></i>
+          </div>
+          <div aria-hidden="true">
+          <p class="work">〈64 Moves〉</p>
+          <p class="by">퐁당댄스</p>
+          <i></i>
+          <p class="role">무용수</p>
+          <p>김예원</p><p>김현호</p><p>노예슬</p><p>문소연</p><p>오지은</p>
+          <p>윤승민</p><p>이유진</p><p>이정우</p><p>임재홍</p><p>정진서</p>
+          <i></i>
+          <p class="role">주최 / 주관</p>
+          <p>PongDang! Sequence</p><p>박지현</p>
+          <p class="role">후원</p>
+          <p>경기문화재단</p>
+          <i></i>
+          </div>
+        </div>
       </div>
-      <div class="buttons">
-        <button id="insta" type="button">Instagram ↗</button>
-        <button id="home" type="button">처음으로</button>
+      <div class="foot">
+        <div class="buttons">
+          <button id="insta" type="button">Instagram ↗</button>
+          <button id="home" type="button">처음으로</button>
+        </div>
+        <p class="maker"><span>Game by</span>신재영 · Maya</p>
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>
