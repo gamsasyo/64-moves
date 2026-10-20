@@ -13,7 +13,7 @@ const WINDOW = 0.22;  // a tap counts if it's within this many seconds of the no
 const LEAD = 1.2;     // the answer key starts glowing this long before its note
 
 // Life gauge (0 … 100): a hit fills it, a missed note or a wrong key drains it; empty = game over.
-const LIFE = { start: 60, hit: 16, miss: 6, wrong: 3 };
+const LIFE = { start: 60, hit: 16, miss: 7.2, wrong: 3.6 };
 
 // iOS Safari ignores user-scalable=no: block double-tap zoom and pinch zoom by hand.
 // Pointer events still fire, so the keys keep working.
@@ -152,7 +152,7 @@ function changeLife(d) {
   if (life === 0) {
     stopTrack();
     keyboard.setTarget(null);
-    showResult(`게임 오버 · ${hits} / ${CHART.length}`);
+    showResult(`게임 오버\n${hits} / ${CHART.length}`);
   }
 }
 
