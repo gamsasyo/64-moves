@@ -487,7 +487,7 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
   color: var(--ivory);
 }
 #ending .roll p { margin: 0; }
-#ending .roll .by { margin-top: 2px; font-size: 13px; color: var(--ash); letter-spacing: .3em; }
+#ending .roll .by { margin-top: 2px; font-size: 13px; color: var(--ash); letter-spacing: .14em; }
 #ending .roll .role {
   margin: 26px 0 6px;
   font: 10px/1 ui-monospace, Menlo, monospace;
