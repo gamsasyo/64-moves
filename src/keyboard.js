@@ -6,9 +6,7 @@ const BLACK = [
 ];
 
 // onDown({ midi, isBlack }) when a key is pressed, onUp(note, heldMs) when it's let go.
-// Returns setTarget(midi) to light the answer key, hit(note) / wrong(note) to flash a match / miss.
 export function createKeyboard(el, { onDown, onUp }) {
-  const keys = new Map();   // midi → key element
   const press = (keyEl, note) => (e) => {
     e.preventDefault();
     keyEl.classList.add('down');
@@ -27,7 +25,6 @@ export function createKeyboard(el, { onDown, onUp }) {
       keyEl.addEventListener(ev, release(keyEl, note));
     }
     el.appendChild(keyEl);
-    keys.set(note.midi, keyEl);
   };
 
   WHITE.forEach((midi) => {
@@ -42,27 +39,4 @@ export function createKeyboard(el, { onDown, onUp }) {
     k.style.left = `${((after + 1) / WHITE.length) * 100}%`;
     addKey(k, { midi, isBlack: true });
   });
-
-  const flash = (k, cls) => {
-    k.classList.remove(cls);
-    void k.offsetWidth;   // restart animation
-    k.classList.add(cls);
-    k.addEventListener('animationend', () => k.classList.remove(cls), { once: true });
-  };
-
-  return {
-    // Lights one key for the note: the same letter, nearest in pitch (so C lights low or high C, not both).
-    // null clears it.
-    setTarget(midi) {
-      let best = null;
-      if (midi !== null) {
-        for (const m of keys.keys()) {
-          if (m % 12 === midi % 12 && (best === null || Math.abs(m - midi) < Math.abs(best - midi))) best = m;
-        }
-      }
-      for (const [m, k] of keys) k.classList.toggle('target', m === best);
-    },
-    hit: (note) => flash(keys.get(note.midi), 'hit'),
-    wrong: (note) => flash(keys.get(note.midi), 'wrong'),
-  };
 }

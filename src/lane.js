@@ -56,11 +56,11 @@ export function createLane(container, chart) {
   svg.append(staff, roll, key, gauge);
   container.replaceChildren(svg);
 
-  const notes = chart.map(({ midi, length, time }) => {
+  const notes = chart.map(({ midi, length, time, lane }) => {
     const x = HIT_X + time * SPEED;
     const step = stepOf(midi);
     const y = yOfStep(step);
-    const g = el('g', { class: 'note' });
+    const g = el('g', { class: `note lane-${lane}` });   // coloured like the pad that plays it
     // Ledger lines below the staff (C4 and down) and above it (A5 and up).
     for (let s = 0; s >= step; s -= 2) g.appendChild(el('line', { class: 'ledger', x1: x - 7, x2: x + 7, y1: yOfStep(s), y2: yOfStep(s) }));
     for (let s = 12; s <= step; s += 2) g.appendChild(el('line', { class: 'ledger', x1: x - 7, x2: x + 7, y1: yOfStep(s), y2: yOfStep(s) }));

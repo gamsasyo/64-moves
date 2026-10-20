@@ -250,6 +250,7 @@ body:not(.rhythm) .piece.glow::before { opacity: 1; }
 #score .dot { fill: currentColor; }
 #score .staff .hitline { stroke: rgb(var(--spot)); stroke-width: 1.5; opacity: .6; }
 #score .staff .hitzone { fill: rgba(var(--spot), .14); stroke: none; }
+#score .note[class*='lane-'] { color: rgb(var(--lane)); }
 #score .note.hit { color: rgb(var(--spot)); filter: drop-shadow(0 0 4px rgba(var(--spot), .9)); }
 #score .note.miss { opacity: .25; }
 #score .head { fill: currentColor; stroke: currentColor; stroke-width: 1.2; }
@@ -335,22 +336,49 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
 .key.white.down { background: #cfc8bb; }
 .key.black.down { background: #3a3835; }
 
-/* The answer key glows gold and pulses; a match flashes white; a miss flashes red and shakes. */
-.key.target { animation: lit 700ms ease-in-out infinite alternate; }
-.key.white.target { background: rgb(var(--spot)); box-shadow: inset 0 0 0 3px #fff; }
-.key.black.target { background: #8a7a55; border-color: rgb(var(--spot)); box-shadow: 0 0 14px 4px rgba(var(--spot), .7); }
+/* ---------- ③' rhythm-game pads: four big buttons in place of the keyboard ---------- */
+#pads {
+  display: none;
+  width: var(--col);
+  flex: 1 1 auto;
+  min-height: calc(var(--col) * var(--keys-min));
+  max-height: calc(var(--col) * var(--keys-max));
+  gap: 6px;
+}
+body.rhythm #keyboard { display: none; }
+body.rhythm #pads { display: flex; }
+
+/* Lane colours, shared by the pads and the notes on the staff. */
+.lane-0 { --lane: 156, 204, 255; }
+.lane-1 { --lane: 119, 221, 204; }
+.lane-2 { --lane: 255, 221, 119; }
+.lane-3 { --lane: 255, 136, 170; }
+
+.pad {
+  flex: 1;
+  touch-action: none;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--lane), .35);
+  border-top: 3px solid rgba(var(--lane), .7);
+  background: linear-gradient(rgba(var(--lane), .1), rgba(var(--lane), .03));
+}
+.pad.down { background: rgba(var(--lane), .22); }
+/* The answer pad fills with its colour and pulses; a match flashes white; a miss flashes red and shakes. */
+.pad.target {
+  background: rgba(var(--lane), .55);
+  border-color: rgb(var(--lane));
+  box-shadow: 0 0 22px 2px rgba(var(--lane), .45);
+  animation: lit 700ms ease-in-out infinite alternate;
+}
 @keyframes lit {
   from { filter: brightness(.85); }
-  to   { filter: brightness(1.2) drop-shadow(0 0 12px rgba(var(--spot), .95)); }
+  to   { filter: brightness(1.2); }
 }
-.key.hit { animation: flash 380ms ease-out; }
+.pad.hit { animation: flash 380ms ease-out; }
 @keyframes flash {
-  0%, 40% { background: #fff; filter: drop-shadow(0 0 18px #fff) drop-shadow(0 0 8px #ffe9b0); }
-  100%    { filter: none; }
+  0%, 40% { background: #fff; box-shadow: 0 0 26px 6px rgba(255, 255, 255, .7); }
 }
-.key.wrong { animation: miss 300ms; }
-.key.white.wrong { background: #d98a7f; }
-.key.black.wrong { background: #7a2e27; }
+.pad.wrong { animation: miss 300ms; background: rgba(217, 96, 79, .55); }
 @keyframes miss {
   25% { translate: -3px 0; }
   75% { translate: 3px 0; }

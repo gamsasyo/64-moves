@@ -8,6 +8,7 @@ import { createStage } from './render.js';
 import { createLane } from './lane.js';
 import { SCRIPT, TRACK } from './script.js';
 import { createEnding } from './ending.js';
+import { createPads } from './pads.js';
 
 const WINDOW = 0.22;  // a tap counts if it's within this many seconds of the note (♪ = 0.34 s)
 const LEAD = 1.2;     // the answer key starts glowing this long before its note
@@ -72,7 +73,7 @@ function enterFree() {
     stopTrack();
     clearTimeout(endTimer);
     stage.reset();
-    keyboard.setTarget(null);
+    pads.setTarget(null);
   }
   mode = 'free';
   document.body.classList.remove('rhythm');
@@ -108,7 +109,14 @@ const finishers = new Map();   // note → turns its score head into the right n
 
 // Every note to play, in order. The knight dances its phrase's move on the first note of the
 // phrase that's hit; a phrase with every note missed still gets its stage effects.
-const CHART = SCRIPT.flatMap((step) => step.notes.map((n, k) => ({ ...n, step, first: k === 0, last: k === step.notes.length - 1 })));
+// Each note also gets a pad (lane 0–3) by pitch: below A♭4 · A♭4 · B♭4 · C5 and up. The split
+// is the most even one for this chart (35 · 29 · 18 · 22 notes), so A♭4's 29 don't swamp a pad.
+const LANE_CUTS = [68, 70, 72];
+const laneOf = (midi) => LANE_CUTS.filter((c) => midi >= c).length;
+const LANE_PITCH = [65, 68, 70, 72];   // what a pad sounds like when it isn't playing the answer
+const CHART = SCRIPT.flatMap((step) => step.notes.map((n, k) => ({
+  ...n, step, lane: laneOf(n.midi), first: k === 0, last: k === step.notes.length - 1,
+})));
 let stage;
 let lane;
 let next;
@@ -122,7 +130,7 @@ function enterRhythm() {
   mode = 'rhythm';
   document.body.classList.add('rhythm');
   setSnap(false);
-  desc.textContent = '빛나는 건반을 치면 나이트가 춤춥니다.';
+  desc.textContent = '빛나는 버튼을 치면 나이트가 춤춥니다.';
   gameBtn.textContent = '✕ 나가기';
   if (!trackLoaded) {
     loadTrack(TRACK);
@@ -151,7 +159,7 @@ function changeLife(d) {
   lane.gauge(life / 100);
   if (life === 0) {
     stopTrack();
-    keyboard.setTarget(null);
+    pads.setTarget(null);
     showResult(`게임 오버\n${hits} / ${CHART.length}`);
   }
 }
@@ -215,26 +223,39 @@ function frame() {
     // A miss can empty the gauge and stop the song mid-loop.
     while (songTime() !== null && next < CHART.length && t > CHART[next].time + WINDOW) settle(false);
     const note = CHART[next];
-    if (songTime() !== null) keyboard.setTarget(note && note.time - t < LEAD ? note.midi : null);
+    if (songTime() !== null) pads.setTarget(note && note.time - t < LEAD ? note.lane : null);
   }
   requestAnimationFrame(frame);
 }
 
-// ---------- keys ----------
+// ---------- input ----------
 
-const keyboard = createKeyboard(document.getElementById('keyboard'), {
+createKeyboard(document.getElementById('keyboard'), {
   onDown(note) {
     noteOn(note.midi);
-    if (mode === 'free') {
-      finishers.set(note, score.note(note));
-      phrase.down(note);
-      return;
-    }
+    finishers.set(note, score.note(note));
+    phrase.down(note);
+  },
+  onUp(note, heldMs) {
+    noteOff(note.midi);
+    finishers.get(note)?.(heldMs);
+    finishers.delete(note);
+    phrase.up();
+  },
+});
+
+// Rhythm game: the pads. A pad sounds the note it's answering, or its own pitch otherwise.
+const sounding = [];   // lane → midi it started
+const pads = createPads(document.getElementById('pads'), {
+  onDown(lane) {
     const t = songTime();
     const want = CHART[next];
-    if (t === null || !want || Math.abs(t - want.time) > WINDOW) return;   // off the beat: just a note
-    if (note.midi % 12 === want.midi % 12) {
-      keyboard.hit(note);
+    const onBeat = t !== null && want && Math.abs(t - want.time) <= WINDOW;
+    sounding[lane] = onBeat && want.lane === lane ? want.midi : LANE_PITCH[lane];
+    noteOn(sounding[lane]);
+    if (!onBeat) return;   // off the beat: just a note
+    if (want.lane === lane) {
+      pads.hit(lane);
       // The stage flashes once a phrase, on its first note, once the knight rides free (19–).
       if (want.first && want.step.n >= 19) {
         boardEl.classList.remove('flash');
@@ -242,17 +263,13 @@ const keyboard = createKeyboard(document.getElementById('keyboard'), {
         boardEl.classList.add('flash');
       }
       settle(true);
-    }
-    else {
-      keyboard.wrong(note);
+    } else {
+      pads.wrong(lane);
       changeLife(-LIFE.wrong);
     }
   },
-  onUp(note, heldMs) {
-    noteOff(note.midi);
-    finishers.get(note)?.(heldMs);
-    finishers.delete(note);
-    phrase.up();
+  onUp(lane) {
+    noteOff(sounding[lane]);
   },
 });
 
