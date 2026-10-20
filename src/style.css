@@ -450,7 +450,17 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
 .e-piece.riding { top: -3.5%; }
 .e-bike { z-index: 1; opacity: .85; }
 .e-bike svg { width: 92%; }
-#ending .score { margin: -8px 0 0; font-size: 11px; color: var(--ash); letter-spacing: .1em; }
+/* The title stays put; everything under it rolls. */
+#ending .head { text-align: center; }
+#ending .work {
+  margin: 0;
+  font-family: -apple-system, 'Apple SD Gothic Neo', 'Helvetica Neue', sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: .08em;
+  color: var(--ivory);
+}
+#ending .score { margin: 6px 0 0; font-size: 11px; color: var(--ash); letter-spacing: .1em; }
 
 /* Performance credits roll up like a film's, looping; faded in and out at the edges. */
 #ending .credits {
@@ -476,7 +486,6 @@ body:not(.rhythm) #score .note { animation: appear 120ms ease-out; transition: o
   color: var(--ivory);
 }
 #ending .roll p { margin: 0; }
-#ending .roll .work { font-size: 22px; font-weight: 400; letter-spacing: .08em; }
 #ending .roll .by { margin-top: 2px; font-size: 13px; color: var(--ash); letter-spacing: .3em; }
 #ending .roll .role {
   margin: 26px 0 6px;
